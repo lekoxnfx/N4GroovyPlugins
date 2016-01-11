@@ -1,0 +1,18 @@
+<component name="libraryTable">
+  <library name="N4Webapi">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <excluded>
+      <root url="jar://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi/groovy-all.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi/groovy-wslite.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi/groovypp.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi/groovysoap.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi/groovyws.jar!/" />
+      <root url="jar://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi/abdera-client-incubating.jar!/" />
+    </excluded>
+    <jarDirectory url="file://$PROJECT_DIR$/../../ExternalLibraries/N4Webapi" recursive="false" />
+  </library>
+</component>
