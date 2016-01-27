@@ -3,7 +3,6 @@ package com.n4.lwt
 
 import com.navis.argo.business.api.GroovyApi
 import com.navis.inventory.business.units.Unit
-import com.navis.services.business.event.Event
 import com.navis.inventory.business.units.UnitFacilityVisit
 import com.navis.argo.business.extract.ChargeableUnitEvent
 import com.navis.framework.business.Roastery
@@ -50,9 +49,8 @@ class LWT_CUEProcess extends GroovyApi {
                         if (!cueList.isEmpty()) {
                             cueList.each { cueItem ->
                                 ChargeableUnitEvent cue = (ChargeableUnitEvent) cueItem;
-                                if (cue != null) {
+                                if (cue != null)
                                     cue.setBexuFlexString07(changeValue)
-                                }
                             }
                         }
                     }
