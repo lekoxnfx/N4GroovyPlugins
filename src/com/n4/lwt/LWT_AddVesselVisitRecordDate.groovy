@@ -25,7 +25,7 @@ class LWT_AddVesselVisitRecordDate extends GroovyApi {
         Date vesselATD
 
         VesselVisitDetails visitDetails = (VesselVisitDetails) this.event.getEntity()
-        if (visitDetails) {
+        if (!visitDetails) {
             notes = "获取不到船期信息，vvd为空！";
             api.log(notes)
         } else {
@@ -33,8 +33,9 @@ class LWT_AddVesselVisitRecordDate extends GroovyApi {
             if (carrierVisit) {
                 vesselATD = carrierVisit.getCvATD()
                 //如果当前登记时间不为空,则不去修改
-                if (!visitDetails.getVvFlexDate01())
+                if (!visitDetails.getVvFlexDate01()) {
                     visitDetails.setFieldValue(VesselBizMetafield.VV_FLEX_DATE01, vesselATD)
+                }
             }
         }
     }
