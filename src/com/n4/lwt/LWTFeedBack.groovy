@@ -8,6 +8,7 @@ import com.navis.argo.business.reference.ScopedBizUnit
 import com.navis.inventory.InventoryField
 import com.navis.inventory.business.units.UnitFacilityVisit
 import com.navis.services.business.event.GroovyEvent
+import com.navis.vessel.VesselBizMetafield
 import com.navis.vessel.business.schedule.VesselVisitDetails
 import groovy.sql.Sql
 
@@ -51,6 +52,13 @@ class LWTFeedBack extends  GroovyApi{
             init()
             if (noError){
                 doFeedBack(vvd)
+                SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd HH:mm:ss")
+                if(isSuccess){
+                    vvd.setFieldValue(VesselBizMetafield.VV_FLEX_STRING07,"码头反馈成功！[" + dateFormat.format(new Date()) + "]")
+                }
+                else {
+                    vvd.setFieldValue(VesselBizMetafield.VV_FLEX_STRING07,"码头反馈失败，原因：" +notes + "[" + dateFormat.format(new Date()) + "]")
+                }
             }
         }
 
@@ -69,9 +77,11 @@ class LWTFeedBack extends  GroovyApi{
             //查询装卸的Unit列表
             String unitQueryDschStr = """
 				select ufv.gkey from inv_unit_fcy_visit ufv, inv_unit u where ufv.actual_ib_cv = '${cvgkey}' and ufv.unit_gkey = u.gkey
+                and ufv.TRANSIT_STATE in ('S40_YARD','S50_ECOUT','S60_LOADED','S70_DEPARTED')
 				"""
             String unitQueryLoadStr = """
-				select ufv.gkey from inv_unit_fcy_visit ufv, inv_unit u where ufv.actual_ob_cv = '${cvgkey}' and ufv.unit_gkey = u.gkey
+				select ufv.gkey from inv_unit_fcy_visit ufv, inv_unit u where ufv.actual_ob_cv = '${cvgkey}' and ufv.unit_gkey = u.gkey                 and ufv.TRANSIT_STATE in ('S30_ECIN','S40_YARD','S50_ECOUT','S60_LOADED','S70_DEPARTED')
+                and ufv.TRANSIT_STATE in ('S60_LOADED','S70_DEPARTED')
 				"""
             api.log("sql语句：\n\r" + unitQueryDschStr + "\n\r" + unitQueryLoadStr)
 
@@ -117,7 +127,8 @@ class LWTFeedBack extends  GroovyApi{
                 LBSJ = TO_DATE('${fv.LBSJ}','YYYY-MM-DD hh24:mi:ss'),
                 LGSJ = TO_DATE('${fv.LGSJ}','YYYY-MM-DD hh24:mi:ss'),
                 CZLX = 'U',
-                SFHQ = 'N'
+                SFHQ = 'N',
+                HQSJ = ''
             WHEN NOT MATCHED THEN INSERT (JLBH,LX,CBBH,JGSJ,KBSJ,KGSJ,WGSJ,LBSJ,LGSJ,CZLX,SFHQ)
                 VALUES ('${fv.JLBH}',
                 'J',
@@ -167,6 +178,8 @@ class LWTFeedBack extends  GroovyApi{
                 fu.YYR = sbu.getBzuName()
                 if(ufv.getUfvUnit().getUnitFreightKind().equals(FreightKindEnum.MTY)){
                     fu.KZ = "E"
+                    fu.HWDM = "空箱"
+                    fu.HWMC = "空箱"
                 }
                 else {
                     fu.KZ = "F"
@@ -220,6 +233,8 @@ class LWTFeedBack extends  GroovyApi{
                 fu.YYR = sbu.getBzuName()
                 if(ufv.getUfvUnit().getUnitFreightKind().equals(FreightKindEnum.MTY)){
                     fu.KZ = "E"
+                    fu.HWDM = "空箱"
+                    fu.HWMC = "空箱"
                 }
                 else {
                     fu.KZ = "F"
@@ -233,7 +248,7 @@ class LWTFeedBack extends  GroovyApi{
                 try {
                     fu.ZHG = ufv.getUfvUnit().getUnitRouting().getRtgPOL().getPointUnLoc().getUnlocPlaceName()
                 } catch (Exception e1) {
-                    fu.ZHG = ""
+                    fu.ZHG = "温州"
                 }
                 try {
                     fu.XHG = ufv.getUfvUnit().getUnitRouting().getRtgPOD1().getPointUnLoc().getUnlocPlaceName()
@@ -268,7 +283,8 @@ class LWTFeedBack extends  GroovyApi{
                     ZHG = '${u.ZHG}',
                     XHG = '${u.XHG}',
                     CZLX = 'U',
-                    SFHQ = 'N'
+                    SFHQ = 'N',
+                    HQSJ = ''
                 WHEN NOT MATCHED THEN INSERT (JLBH,CBBH,PZBH,MYXZ,JCK,HWLX,HWDM,HWMC,HZ,HWZL,XH,YYR,KZ,CC,XX,XHL,ZHG,XHG,CZLX,SFHQ)
                     VALUES ('${u.JLBH}',
                     '${u.CBBH}',
@@ -309,38 +325,48 @@ class LWTFeedBack extends  GroovyApi{
                     }
                     if(res_v == [1]){
                         api.log("插入船期信息成功！")
-                    }
-                    //处理箱信息
-                    //先全部标记删除，然后标记为I或U
+                        //处理箱信息
+                        //先全部标记删除，然后标记为I或U
 
-                    def sqlStr_deleteUnit = "update SC_CB_HWPZ set CZLX = 'D' where CBBH = '${globalCBBH}'"
-                    def res_d = sqlGroup.executeUpdate(sqlStr_deleteUnit)
-                    if(res_d == [1]){
-                        api.log("删除旧历史记录成功！")
-                    }
-                    def res_u = sqlGroup.withBatch { stmt->
-                        sql_str_list_u.each {s->
-                            stmt.addBatch(s)
+                        def sqlStr_deleteUnit = "update SC_CB_HWPZ set CZLX = 'D',HQSJ=''  where PZBH = '${vvd.getPrimaryKey()}'"
+                        def res_d = sqlGroup.executeUpdate(sqlStr_deleteUnit)
+                        if(res_d == [1]){
+                            api.log("删除旧历史记录成功！")
+                        }
+                        def res_u = sqlGroup.withBatch { stmt->
+                            sql_str_list_u.each {s->
+                                stmt.addBatch(s)
+                            }
+                        }
+                        def r_u = true
+                        res_u.each {r->
+                            if(r!=1) r_u = false
+                        }
+                        if(r_u == true){
+                            api.log("插入Unit信息成功！")
+                            isSuccess = true
+                            notes = "码头反馈成功！"
                         }
                     }
-                    def r_u = true
-                    res_u.each {r->
-                        if(r!=1) r_u = false
+                    else {
+                        noError = false
+                        notes = "插入船期信息失败！"
                     }
-                    if(r_u == true){
-                        api.log("插入Unit信息成功！")
-                    }
+
                     api.log("数据库操作结束")
                 }
             } catch (SQLException se) {
                 api.log("插入数据错误！回滚！")
                 api.log(se.toString())
+                noError = false;
+                notes =  se.toString()
             }
 
             api.log("回写结束")
 
         } catch (Exception e) {
             api.log(e.toString())
+            noError = false
             notes = e.toString()
             e.printStackTrace()
         }
@@ -399,6 +425,9 @@ class LWTFeedBack extends  GroovyApi{
                 return '40GP'
                 break
             case '2200':
+                return '20GP'
+                break
+            case '2500':
                 return '20GP'
                 break
             case '9500':
