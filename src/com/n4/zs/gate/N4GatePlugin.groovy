@@ -2,13 +2,8 @@ package com.n4.zs.gate
 
 import com.navis.argo.ContextHelper
 import com.navis.argo.business.api.GroovyApi
-import com.navis.argo.business.atoms.FreightKindEnum
 import com.navis.argo.business.atoms.UnitCategoryEnum
-import com.navis.argo.webservice.types.v1_0.GenericInvokeResponseWsType
-import com.navis.argo.webservice.types.v1_0.MessageCollectorType
-import com.navis.argo.webservice.types.v1_0.QueryResultType
-import com.navis.argo.webservice.types.v1_0.ResponseType
-import com.navis.argo.webservice.types.v1_0.ScopeCoordinateIdsWsType
+import com.navis.argo.webservice.types.v1_0.*
 import com.navis.framework.business.Roastery
 import com.navis.framework.portal.QueryUtils
 import com.navis.framework.portal.query.DomainQuery
@@ -18,9 +13,6 @@ import com.navis.inventory.InventoryField
 import com.navis.inventory.business.atoms.UfvTransitStateEnum
 import com.navis.inventory.business.atoms.UnitVisitStateEnum
 import com.navis.inventory.business.units.Unit
-import com.navis.inventory.business.units.UnitFacilityVisit
-import com.navis.road.RoadApptsEntity
-import com.navis.road.RoadApptsField
 import com.navis.road.business.appointment.model.GateAppointment
 import com.navis.road.business.atoms.AppointmentStateEnum
 import com.navis.road.business.atoms.TranSubTypeEnum
@@ -213,7 +205,7 @@ class N4GatePlugin {
                 //检查是否有活动记录
                 List<TruckVisitDetails> truckVisitDetailsList = TruckVisitDetails.findTVActiveByTruckLicenseNbr(truck.getTruckLicenseNbr())
                 if(truckVisitDetailsList!=null&&truckVisitDetailsList.size()>0){
-                   resHint = "有活动的记录未处理"
+                    resHint = "有活动的记录未处理"
                     isAllowed = false
                     api.log(resHint)
                 }
@@ -361,7 +353,27 @@ class N4GatePlugin {
                         if(inApptNbrs!=null&&inApptNbrs!=""){
                             try{
                                 //解析预约号
-                                appts = this.inApptNbrs.contains(",")?inApptNbrs.split(",",-1):[inApptNbrs]
+                                String[] apptStrs = inApptNbrs.contains(",")?inApptNbrs.split(",",-1):[inApptNbrs]
+                                /*
+                                修改于2017年03月13日
+                                */
+                                List<String> apptList = new ArrayList<>()
+                                apptStrs.each {apptStr->
+                                    println("appStr=" + apptStr)
+                                    if (apptStr.endsWith("A")){
+                                        apptList.add(apptStr[0..-2])
+                                    }
+                                    else if(apptStr.endsWith("B")){
+                                        apptList.add(apptStr[0..-2])
+                                        apptList.add(apptStr[0..-2])
+                                    }
+                                    else {
+                                        //兼容旧版预约号
+                                        apptList.add(apptStr[0..-2])
+                                    }
+                                }
+                                appts = apptList.toArray()
+
                             }catch(Exception e){
                                 resHint = "预约号解析出错。"
                                 api.log(resHint)
