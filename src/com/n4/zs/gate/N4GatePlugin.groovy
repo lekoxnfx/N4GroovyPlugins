@@ -359,7 +359,6 @@ class N4GatePlugin {
                                 */
                                 List<String> apptList = new ArrayList<>()
                                 apptStrs.each {apptStr->
-                                    println("appStr=" + apptStr)
                                     if (apptStr.endsWith("A")){
                                         apptList.add(apptStr[0..-2])
                                     }

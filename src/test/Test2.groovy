@@ -7,7 +7,7 @@ class Test2 {
 	static main(args) {
         println("test start")
         String[] appts
-		String inApptNbrs = "00001899,000231"
+		String inApptNbrs = ""
         if(inApptNbrs!=null&&inApptNbrs!=""){
             try{
                 //解析预约号
