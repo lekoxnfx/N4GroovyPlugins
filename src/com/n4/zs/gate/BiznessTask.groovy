@@ -33,7 +33,7 @@ class BiznessTask {
 
     }
     public void checkTime(){
-        //用于检测出口箱是否在允许的时间范围内
+        //用于检测出口箱是否在允许的时间范围内 add by lekoxnfx
         def tran = (TruckTransaction)inDao.getTran();
         api.log("出口箱" + "unit id:" + tran.getTranContainer().getEqIdFull())
         com.navis.argo.business.model.CarrierVisit obcv = tran.getTranCarrierVisit()
@@ -42,13 +42,22 @@ class BiznessTask {
             if (obcv.getCvCarrierMode().equals(com.navis.argo.business.atoms.LocTypeEnum.VESSEL)){
                 com.navis.vessel.business.schedule.VesselVisitDetails vvd = com.navis.vessel.business.schedule.VesselVisitDetails.resolveVvdFromCv(obcv)
                 if (vvd!=null){
+                    Date currentDate = new Date()
                     Date startDate = vvd.getVvFlexDate01()
                     api.log("出口航次允许提箱时间:" + startDate.toString())
                     if(startDate!=null){
-                        Date currentDate = new Date()
                         if(currentDate<startDate){
                             tran.tranFlexString02 = "X"
-                            api.log("遭遇允许提箱时间,标记tranFlexString02")
+                            api.log("早于允许提箱时间,标记tranFlexString02")
+                        }
+
+                    }
+                    Date endDate = vvd.getVvFlexDate02()
+                    api.log("出口航次允许提箱时间:" + startDate.toString())
+                    if(endDate!=null){
+                        if(currentDate>endDate){
+                            tran.tranFlexString02 = "X"
+                            api.log("晚于允许提箱时间,标记tranFlexString02")
                         }
 
                     }
@@ -57,4 +66,24 @@ class BiznessTask {
         }
 
     }
+    public void clearAppt(){
+
+        def tran = (TruckTransaction)inDao.getTran();
+
+        def tranApptNbr = tran.getTranAppointmentNbr();
+
+        api.log("关联的预约号：ApptNbr:" + tranApptNbr);
+        if(tranApptNbr!=null){
+            def cntrAssigned = tran. getTranCtrNbrAssigned();
+
+            api.log("关联的箱号：CntrAssigned-before:" + cntrAssigned);
+
+
+
+            tran. setTranCtrNbrAssigned(null);
+            api.log("CntrAssigned-after:" + cntrAssigned);
+        }
+
+    }
+
 }

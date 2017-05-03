@@ -99,14 +99,15 @@ class GenerateMAS3101 extends GroovyApi {
         vesselCode = cv.carrierDocumentationNbr
         String vesselCountry = cv.getCvCvd().getCarrierCountryName();
         api.log("船舶国籍:" + vesselCountry)
-        if(vesselCountry!=null){
-            if(vesselCountry.toUpperCase()!="CHINA"){
-                vesselCode = "UN" + vesselCode
-            }
-            else{
-                vesselCode = "CN" + vesselCode
-            }
-        }
+//        if(vesselCountry!=null){
+//            if(vesselCountry.toUpperCase()!="CHINA"){
+//                vesselCode = "UN" + vesselCode
+//            }
+//            else{
+//                vesselCode = "CN" + vesselCode
+//            }
+//        }
+        vesselCode = "UN" + vesselCode
         vesselName = cv.getCarrierVehicleName()
         switch(ufv.getUfvUnit().unitFreightKind){
             case FreightKindEnum.FCL:

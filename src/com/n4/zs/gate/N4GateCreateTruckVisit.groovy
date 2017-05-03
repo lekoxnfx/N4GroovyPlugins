@@ -1,5 +1,6 @@
 package com.n4.zs.gate
 
+import com.navis.argo.impl.TruckVisitDocumentImpl
 import groovy.xml.MarkupBuilder
 import java.util.Map;
 
@@ -114,6 +115,9 @@ class N4GateCreateTruckVisit {
 		}
 		api.log("TruckVisit Gkey:" + this.tvGkey)
 		api.log("啊啊啊啊啊啊appointment container nbr after:" + appt.getGapptCtrId())
+
+
+		
 		
 //		CreateTruckVisitResponseWSType ctWSResp = roadServicePort.createTruckVisit(scope, gateId, "", truckLic, "", "", "")
 //		this.tvGkey = ctWSResp.getTruckVisitId()
