@@ -124,7 +124,7 @@ class GenerateMAS3101 extends GroovyApi {
         }
         String unit_iso_code = unit.getUnitPrimaryUe().getUeEquipment().eqEquipType.eqtypId
 
-        characteristicCode = this.ISO_TO_HGCODE.get(unit_iso_code)
+        characteristicCode = this.ISO_TO_HGCODE.get(unit_iso_code,unit_iso_code)
 
         def xmlStringWriter = new StringWriter()
         def xmlBuilder = new MarkupBuilder(xmlStringWriter)
