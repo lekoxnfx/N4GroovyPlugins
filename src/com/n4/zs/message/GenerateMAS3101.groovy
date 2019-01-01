@@ -249,6 +249,18 @@ class GenerateMAS3101 extends GroovyApi {
         ISO_TO_HGCODE.put("4200", "42G1")
         ISO_TO_HGCODE.put("4500", "45G1")
         ISO_TO_HGCODE.put("4530", "45R1")
-
     }
+//    public String getHgCode(String inCode,String fullLessCode){
+//        String hgCode = ISO_TO_HGCODE.get(inCode)
+//        if(hg==null){
+//            if(fullLessCode.equals("4")){
+//                hgCode = inCode.startsWith("2")?"20GP":"40HC"
+//            }
+//            else {
+//                hgCode = inCode
+//            }
+//        }
+//        return hgCode;
+//
+//    }
 }
