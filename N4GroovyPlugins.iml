@@ -17,5 +17,7 @@
         <SOURCES />
       </library>
     </orderEntry>
+    <orderEntry type="library" name="groovy-2.5.5" level="application" />
+    <orderEntry type="library" name="N4Webapi25" level="application" />
   </component>
 </module>

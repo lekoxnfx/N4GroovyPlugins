@@ -149,7 +149,7 @@ class GenerateMAS3101Del extends GroovyApi {
                         'SenderID'(this.SENDER_ID) //"_SP05490001"
                         'ReceiverID'(this.RECEIVER_ID)
                         'SendTime'(this.sendTimeStr)
-                        'Version'("1.0")
+                        'Version'("1.3")
                     }
                     'Declaration'{
                         'DeclarationOfficeID'(this.OFFICE_ID)
