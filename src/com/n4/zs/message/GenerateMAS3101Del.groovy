@@ -40,6 +40,10 @@ class GenerateMAS3101Del extends GroovyApi {
     public String version = "1.0"
     public String versionInFileName = "1p0"
 
+    public String reason = '业务需要'
+    public String contactName = '高维'
+    public String contactTel = '13967230426'
+
     public void execute(GroovyEvent inEvent,GroovyApi inApi){
         init();
         this.event = inEvent
@@ -153,10 +157,21 @@ class GenerateMAS3101Del extends GroovyApi {
                             'JourneyID'(voyage)
                             'ID'(vesselCode)
                         }
+                        'Consignment'{
+                            'TransportContractDocument'{
+                                'ID'('')
+                            }
+                        }
                         'TransportEquipment'{
                             'EquipmentIdentification'{
                                 'ID'(unit.getUnitId())
                             }
+                        }
+                        'AdditionalInformation'{
+                            'Reason'(this.reason)
+                            'ContactName'(this.contactName)
+                            'ContactTel'(this.contactTel)
+                            'Content'('')
                         }
                     }
                 }
