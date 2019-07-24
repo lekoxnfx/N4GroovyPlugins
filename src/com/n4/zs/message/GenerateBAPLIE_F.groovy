@@ -25,9 +25,9 @@ class GenerateBAPLIE_F {
 	public String fileDirBak = "D:\\MESSAGE\\Backup\\BAPLIE"
 	public String messageType = "BAPLIE"
 	public String sender_id = "ZSDND"
-	
+
 	String line_sep = "\n"
-	
+
 	public GroovyEvent event
 	public GroovyApi api
 	public Map<String,String> paras	//额外参数
@@ -38,7 +38,7 @@ class GenerateBAPLIE_F {
 	public boolean noError = true;
 	public String note = "";
 	Sql sql;
-	
+
 	public void execute(GroovyEvent inEvent,GroovyApi inApi,Map<String,String> inParas){
 		this.event = inEvent
 		this.api = inApi
@@ -65,9 +65,9 @@ class GenerateBAPLIE_F {
 			String unitQueryStr;
 			unitQueryStr = """
 			select ufv.gkey from inv_unit_fcy_visit ufv, inv_unit u where ufv.actual_ob_cv = '${cvgkey}' and ufv.unit_gkey = u.gkey
-			""" 
-				
-			
+			"""
+
+
 			String sender_code = "ZSDND"
 			String receiver_code
 			if(paras.get("RECEIVER_CODE")!=null){
@@ -76,7 +76,7 @@ class GenerateBAPLIE_F {
 				throw new Exception("接收方代码为空")
 			}
 			String file_create_time = new SimpleDateFormat("yyyyMMddHHmm").format(new Date())
-			
+
 			List<UnitFacilityVisit> list_ufv = new ArrayList<UnitFacilityVisit>();//预配箱列表
 			//数据库查询
 			sql.eachRow(unitQueryStr) {r->
@@ -84,27 +84,27 @@ class GenerateBAPLIE_F {
 				UnitFacilityVisit ufv = UnitFacilityVisit.hydrate(ufv_gkey)
 				list_ufv.add(ufv)
 			}
-			
-			
+
+
 			String ediString = ""
 			int record_count = 0
 			//00记录
 			api.log("生成00记录")
-			
+
 			String edi00 = """
 			00:${messageType}:${file_description}:9:${sender_id}:${receiver_code}:${file_create_time}'
-			""" 
+			"""
 			edi00 = edi00.trim() + line_sep
 			ediString = ediString + edi00
 			record_count++
-			
+
 			//10记录 船舶信息
 			api.log("生成10记录")
-			
+
 			String vessel_code = vvd.getCarrierDocumentationNbr()
 			String vessel = vvd.getCarrierVehicleName()
 			if(vessel_code==null||vessel_code=="null"){
-					vessel_code = ""
+				vessel_code = ""
 			}
 			String nationality_code = ""
 			try{
@@ -125,56 +125,64 @@ class GenerateBAPLIE_F {
 			String next_calling_port_code = ""
 			String next_calling_port = ""
 			String container_count = list_ufv.size()
-			
+
 			String edi10 = """
 			10:${vessel_code}:${vessel}:${nationality_code}:${voyage}:${trade_code}:${trade}:${etd_arrived_date}:${sailing_date}:${depart_port_code}:${depart_port}:${next_calling_port_code}:${next_calling_port}:${container_count}'
-			""" 
+			"""
 			edi10 = edi10.trim() + line_sep
 			ediString = ediString + edi10
 			record_count++
-			
+
 			//11记录 船舶补充信息
 			api.log("生成11记录")
-			
+
 			String shipping_line_code = vvd.getVvdBizu().getBzuId()
 			String shipping_line = ""
 			String edi11 = """
 			11:${shipping_line_code}:${shipping_line}'
-			""" 
-				edi11 = edi11.trim() + line_sep
-				ediString = ediString + edi11
-				record_count++
-			
+			"""
+			edi11 = edi11.trim() + line_sep
+			ediString = ediString + edi11
+			record_count++
+
 			//50,51,52,53,54循环
 			list_ufv.each {u->
 				UnitFacilityVisit ufv = u
 				Unit unit = ufv.getUfvUnit()
 				//50记录 箱信息
 				api.log("生成50记录")
-				
+
 				String ctn_no = unit.getUnitId()
 				String unit_iso_code = unit.getUnitPrimaryUe().getUeEquipment().eqEquipType.eqtypId
 				String ctn_size_type = ISO_TO_GP.get(unit_iso_code)==null?unit_iso_code:ISO_TO_GP.get(unit_iso_code)
 				String ctn_status;
 				switch(unit.unitFreightKind){
 					case FreightKindEnum.FCL:
-					ctn_status = "F";
-					break;
+						ctn_status = "F";
+						break;
 					case FreightKindEnum.MTY:
-					ctn_status = "E";
-					break;
+						ctn_status = "E";
+						break;
 					case FreightKindEnum.LCL:
-					ctn_status = "L";
-					break;
+						ctn_status = "L";
+						break;
 					default:
-					ctn_status = "F";
+						ctn_status = "F";
 				}
-				String stowage_location ="" 
+				String stowage_location =""
 				try{
 					stowage_location = ufv.getFinalPlannedPosition().getPosSlot();
 				}catch(Exception e){
 					stowage_location = ""
 					api.logWarn(e.toString())
+				}
+				if(stowage_location==null||stowage_location=="null"){
+					try{
+						stowage_location = ufv.getUfvLastKnownPosition().getPosSlot();
+					}catch(Exception e){
+						stowage_location = ""
+						api.logWarn(e.toString())
+					}
 				}
 				if(stowage_location==null||stowage_location=="null"){
 					stowage_location = ""
@@ -183,16 +191,16 @@ class GenerateBAPLIE_F {
 						stowage_location = "0" + stowage_location
 					}
 				}
-				String temperature_id,temperature_setting,min_temperature="",max_temperature=""; 
+				String temperature_id,temperature_setting,min_temperature="",max_temperature="";
 				switch(vvd.getVvdVessel().getVesTemperatureUnits()){
 					case TempUnitEnum.CELSIUS:
-					temperature_id = "C"
-					temperature_setting = ufv.getRfreqTempRequiredInC()
-					break;
+						temperature_id = "C"
+						temperature_setting = ufv.getRfreqTempRequiredInC()
+						break;
 					case TempUnitEnum.FAHRENHEIT:
-					temperature_id = "F"
-					temperature_setting = ufv.getRfreqTempRequiredInF()	
-					break;
+						temperature_id = "F"
+						temperature_setting = ufv.getRfreqTempRequiredInF()
+						break;
 				}
 				String over_length_front = unit.getUnitOogFrontCm()
 				String over_length_back = unit.getUnitOogBackCm()
@@ -202,7 +210,7 @@ class GenerateBAPLIE_F {
 				String gross_weight = unit.getUnitGoodsAndCtrWtKg()
 				String tare_weight = unit.getUnitPrimaryUe().getUeEquipment().getEqTareWeightKg()
 				String ctn_operator_code = unit.getUnitLineOperator().getBzuId()
-				
+
 				if(temperature_setting==null||temperature_setting=="null"){temperature_setting = ""}
 				if(min_temperature==null||min_temperature=="null"){min_temperature = ""}
 				if(max_temperature==null||max_temperature=="null"){max_temperature = ""}
@@ -211,20 +219,20 @@ class GenerateBAPLIE_F {
 				if(over_width_left==null||over_width_left=="null"){over_width_left = ""}
 				if(over_width_right==null||over_width_right=="null"){over_width_right = ""}
 				if(over_height==null||over_height=="null"){over_height = ""}
-				
-				
+
+
 				String ctn_operator = ""
 				String chassis_number = ""//理货专用
 				String edi50 = """
 				50:${ctn_no}:${ctn_size_type}:${ctn_status}:${stowage_location}:${temperature_id}:${temperature_setting}:${min_temperature}:${max_temperature}:${over_length_front}:${over_length_back}:${over_width_left}:${over_width_right}:${over_height}:${gross_weight}:${tare_weight}:${ctn_operator_code}:${ctn_operator}:${chassis_number}'
-				""" 
+				"""
 				edi50 = edi50.trim() + line_sep
-				
+
 				//51副箱信息 无
-				
+
 				//52 地点信息
 				api.log("生成52记录")
-				
+
 				String discharge_port_code= "",load_port_code=""
 				try{
 					discharge_port_code = unit.getUnitRouting().getRtgPOD1().getPointId()
@@ -232,29 +240,29 @@ class GenerateBAPLIE_F {
 				}catch(Exception e){
 					api.log(e.toString())
 				}
-				
+
 				String edi52 = """
 				52:${load_port_code}::${discharge_port_code}:::::'
-				""" 
+				"""
 				edi52 = edi52.trim() + line_sep
-				
+
 				//53 可选卸货港信息 暂无
-				
+
 				//54 危险品信息 暂无
-				
+
 				ediString = ediString + edi50 + edi52
 				record_count++
 				record_count++
-				
+
 			}
-			
+
 			//99字段 尾记录
 			api.log("生成99记录")
-			
+
 			record_count++;
 			String edi99 = """
 			99:${record_count}'
-			""" 
+			"""
 			edi99 = edi99.trim() + line_sep
 			ediString = ediString + edi99
 			api.log("EdiString:" + ediString)
@@ -265,9 +273,9 @@ class GenerateBAPLIE_F {
 			api.logWarn(note)
 			return null
 		}
-				
+
 	}
-	
+
 	public File generateBAPLIEFile(VesselVisitDetails vvd){
 		File dir = new File(this.fileDir)
 		if(!dir.exists()){
@@ -280,7 +288,7 @@ class GenerateBAPLIE_F {
 		}
 		else{
 			File f = new File(fileDir + "\\" + generateFileName() + ".txt")
-			
+
 			def printWriter = f.newPrintWriter('UTF-8')
 			printWriter.append(edi)
 			printWriter.flush()
@@ -299,8 +307,8 @@ class GenerateBAPLIE_F {
 	public void init(){
 		try{
 			ISO_TO_GP = api.getGroovyClassInstance("EDIMessageConventer").get_ISO_TO_GP_MAP()
-			
-			
+
+
 			String DB = "jdbc:oracle:thin:@" + "192.168.50.32" + ":" + "1521" + ":" + "n4"
 			String USER = "n4user"
 			String PASSWORD = "n4dlt"
@@ -311,12 +319,12 @@ class GenerateBAPLIE_F {
 			note = e.toString()
 			api.logWarn(note)
 		}
-		
+
 	}
 	public boolean sendFileToFtp(File f){
 		try{
 			return api.getGroovyClassInstance("ZSEDIFtpHandler").uploadFile(f)
-			
+
 		}catch(Exception e){
 			api.logWarn(e.toString())
 			return false
