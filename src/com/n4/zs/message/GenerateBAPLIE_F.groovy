@@ -1,4 +1,7 @@
 package com.n4.zs.message
+
+import com.navis.inventory.business.atoms.UfvTransitStateEnum
+
 /*
  * 用于出口船生成出口预配船图BAPLIE_F文件
  */
@@ -152,107 +155,110 @@ class GenerateBAPLIE_F {
 				//50记录 箱信息
 				api.log("生成50记录")
 
-				String ctn_no = unit.getUnitId()
-				String unit_iso_code = unit.getUnitPrimaryUe().getUeEquipment().eqEquipType.eqtypId
-				String ctn_size_type = ISO_TO_GP.get(unit_iso_code)==null?unit_iso_code:ISO_TO_GP.get(unit_iso_code)
-				String ctn_status;
-				switch(unit.unitFreightKind){
-					case FreightKindEnum.FCL:
-						ctn_status = "F";
-						break;
-					case FreightKindEnum.MTY:
-						ctn_status = "E";
-						break;
-					case FreightKindEnum.LCL:
-						ctn_status = "L";
-						break;
-					default:
-						ctn_status = "F";
-				}
 				String stowage_location =""
+
 				try{
-					stowage_location = ufv.getFinalPlannedPosition().getPosSlot();
+					//已经上船的获取最后位置
+					if(ufv.getUfvTransitState().equals(UfvTransitStateEnum.S60_LOADED)||
+							ufv.getUfvTransitState().equals(UfvTransitStateEnum.S70_DEPARTED)){
+						stowage_location = ufv.getUfvLastKnownPosition().getPosSlot();
+					}
+					else{
+						//未上船的获取计划位置
+						stowage_location = ufv.getFinalPlannedPosition().getPosSlot();
+					}
 				}catch(Exception e){
 					stowage_location = ""
 					api.logWarn(e.toString())
 				}
-				if(stowage_location==null||stowage_location=="null"){
-					try{
-						stowage_location = ufv.getUfvLastKnownPosition().getPosSlot();
-					}catch(Exception e){
-						stowage_location = ""
-						api.logWarn(e.toString())
-					}
-				}
-				if(stowage_location==null||stowage_location=="null"){
-					stowage_location = ""
-				}else{
+				//有位置的添加进记录
+				if(stowage_location!=null&&stowage_location!="null"&&stowage_location!=""){
 					if(stowage_location.length()<7&&stowage_location.length()>0){
 						stowage_location = "0" + stowage_location
 					}
+					String ctn_no = unit.getUnitId()
+					String unit_iso_code = unit.getUnitPrimaryUe().getUeEquipment().eqEquipType.eqtypId
+					String ctn_size_type = ISO_TO_GP.get(unit_iso_code)==null?unit_iso_code:ISO_TO_GP.get(unit_iso_code)
+					String ctn_status;
+					switch(unit.unitFreightKind){
+						case FreightKindEnum.FCL:
+							ctn_status = "F";
+							break;
+						case FreightKindEnum.MTY:
+							ctn_status = "E";
+							break;
+						case FreightKindEnum.LCL:
+							ctn_status = "L";
+							break;
+						default:
+							ctn_status = "F";
+					}
+
+
+					String temperature_id,temperature_setting,min_temperature="",max_temperature="";
+					switch(vvd.getVvdVessel().getVesTemperatureUnits()){
+						case TempUnitEnum.CELSIUS:
+							temperature_id = "C"
+							temperature_setting = ufv.getRfreqTempRequiredInC()
+							break;
+						case TempUnitEnum.FAHRENHEIT:
+							temperature_id = "F"
+							temperature_setting = ufv.getRfreqTempRequiredInF()
+							break;
+					}
+					String over_length_front = unit.getUnitOogFrontCm()
+					String over_length_back = unit.getUnitOogBackCm()
+					String over_width_left = unit.getUnitOogLeftCm()
+					String over_width_right = unit.getUnitOogRightCm()
+					String over_height = unit.getUnitOogTopCm()
+					String gross_weight = unit.getUnitGoodsAndCtrWtKg()
+					String tare_weight = unit.getUnitPrimaryUe().getUeEquipment().getEqTareWeightKg()
+					String ctn_operator_code = unit.getUnitLineOperator().getBzuId()
+
+					if(temperature_setting==null||temperature_setting=="null"){temperature_setting = ""}
+					if(min_temperature==null||min_temperature=="null"){min_temperature = ""}
+					if(max_temperature==null||max_temperature=="null"){max_temperature = ""}
+					if(over_length_front==null||over_length_front=="null"){over_length_front = ""}
+					if(over_length_back==null||over_length_back=="null"){over_length_back = ""}
+					if(over_width_left==null||over_width_left=="null"){over_width_left = ""}
+					if(over_width_right==null||over_width_right=="null"){over_width_right = ""}
+					if(over_height==null||over_height=="null"){over_height = ""}
+
+
+					String ctn_operator = ""
+					String chassis_number = ""//理货专用
+					String edi50 = """
+						50:${ctn_no}:${ctn_size_type}:${ctn_status}:${stowage_location}:${temperature_id}:${temperature_setting}:${min_temperature}:${max_temperature}:${over_length_front}:${over_length_back}:${over_width_left}:${over_width_right}:${over_height}:${gross_weight}:${tare_weight}:${ctn_operator_code}:${ctn_operator}:${chassis_number}'
+						"""
+					edi50 = edi50.trim() + line_sep
+
+					//51副箱信息 无
+
+					//52 地点信息
+					api.log("生成52记录")
+
+					String discharge_port_code= "",load_port_code=""
+					try{
+						discharge_port_code = unit.getUnitRouting().getRtgPOD1().getPointId()
+						load_port_code = unit.getUnitRouting().getRtgPOL().getPointId()
+					}catch(Exception e){
+						api.log(e.toString())
+					}
+
+					String edi52 = """
+						52:${load_port_code}::${discharge_port_code}:::::'
+						"""
+					edi52 = edi52.trim() + line_sep
+
+					//53 可选卸货港信息 暂无
+
+					//54 危险品信息 暂无
+
+					ediString = ediString + edi50 + edi52
+					record_count++
+					record_count++
 				}
-				String temperature_id,temperature_setting,min_temperature="",max_temperature="";
-				switch(vvd.getVvdVessel().getVesTemperatureUnits()){
-					case TempUnitEnum.CELSIUS:
-						temperature_id = "C"
-						temperature_setting = ufv.getRfreqTempRequiredInC()
-						break;
-					case TempUnitEnum.FAHRENHEIT:
-						temperature_id = "F"
-						temperature_setting = ufv.getRfreqTempRequiredInF()
-						break;
-				}
-				String over_length_front = unit.getUnitOogFrontCm()
-				String over_length_back = unit.getUnitOogBackCm()
-				String over_width_left = unit.getUnitOogLeftCm()
-				String over_width_right = unit.getUnitOogRightCm()
-				String over_height = unit.getUnitOogTopCm()
-				String gross_weight = unit.getUnitGoodsAndCtrWtKg()
-				String tare_weight = unit.getUnitPrimaryUe().getUeEquipment().getEqTareWeightKg()
-				String ctn_operator_code = unit.getUnitLineOperator().getBzuId()
 
-				if(temperature_setting==null||temperature_setting=="null"){temperature_setting = ""}
-				if(min_temperature==null||min_temperature=="null"){min_temperature = ""}
-				if(max_temperature==null||max_temperature=="null"){max_temperature = ""}
-				if(over_length_front==null||over_length_front=="null"){over_length_front = ""}
-				if(over_length_back==null||over_length_back=="null"){over_length_back = ""}
-				if(over_width_left==null||over_width_left=="null"){over_width_left = ""}
-				if(over_width_right==null||over_width_right=="null"){over_width_right = ""}
-				if(over_height==null||over_height=="null"){over_height = ""}
-
-
-				String ctn_operator = ""
-				String chassis_number = ""//理货专用
-				String edi50 = """
-				50:${ctn_no}:${ctn_size_type}:${ctn_status}:${stowage_location}:${temperature_id}:${temperature_setting}:${min_temperature}:${max_temperature}:${over_length_front}:${over_length_back}:${over_width_left}:${over_width_right}:${over_height}:${gross_weight}:${tare_weight}:${ctn_operator_code}:${ctn_operator}:${chassis_number}'
-				"""
-				edi50 = edi50.trim() + line_sep
-
-				//51副箱信息 无
-
-				//52 地点信息
-				api.log("生成52记录")
-
-				String discharge_port_code= "",load_port_code=""
-				try{
-					discharge_port_code = unit.getUnitRouting().getRtgPOD1().getPointId()
-					load_port_code = unit.getUnitRouting().getRtgPOL().getPointId()
-				}catch(Exception e){
-					api.log(e.toString())
-				}
-
-				String edi52 = """
-				52:${load_port_code}::${discharge_port_code}:::::'
-				"""
-				edi52 = edi52.trim() + line_sep
-
-				//53 可选卸货港信息 暂无
-
-				//54 危险品信息 暂无
-
-				ediString = ediString + edi50 + edi52
-				record_count++
-				record_count++
 
 			}
 
