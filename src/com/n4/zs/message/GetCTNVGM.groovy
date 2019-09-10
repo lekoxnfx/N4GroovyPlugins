@@ -307,13 +307,13 @@ class GetCTNVGM {
                     result = ctnvgm_r00.parseEDIString(res[i]);
                     i++;
                 }
-                if(res[i].startsWith("10")){
+                else if(res[i].startsWith("10")){
                     println("解析10")
                     result = ctnvgm_r10.parseEDIString(res[i]);
                     i++;
                 }
                 //start loop_50
-                if(result&&res[i].startsWith("50")){
+                else if(result&&res[i].startsWith("50")){
                     println("解析50")
                     CTNVGM_LOOP_50 l_50 = new CTNVGM_LOOP_50();
                     if(result&&res[i].startsWith("50")){
@@ -323,9 +323,13 @@ class GetCTNVGM {
                     ctnvgm_loop_50s.add(l_50)
                 }
                 //end loop_50
-                if(res[i].startsWith("99")){
+                else if(res[i].startsWith("99")){
                     println("解析99")
                     result = ctnvgm_r99.parseEDIString(res[i]);
+                    i++;
+                }
+                else {
+                    println("不支持的片段:" + res[i])
                     i++;
                 }
             }
