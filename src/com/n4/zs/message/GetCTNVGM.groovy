@@ -40,6 +40,7 @@ class GetCTNVGM {
     String note;
 
     public void execute(Map args){
+        api.log("CTNVGM：初始化文件夹")
         init();
         api.log("CTNVGM：开始收取CTNVGM")
         try{
