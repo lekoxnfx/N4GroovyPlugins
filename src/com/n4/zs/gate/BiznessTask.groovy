@@ -87,8 +87,8 @@ class BiznessTask {
 
     }
 
-    //检查冷藏重箱温度是否未录入
      public void checkTemperature(){
+         //检查冷藏重箱温度是否未录入
          def tran = (com.navis.road.business.model.TruckTransaction)inDao.getTran();
          def unit = (com.navis.inventory.business.units.Unit)tran.getTranUnit();
          api.log("检查箱号" + unit.getUnitId() + "是否为冷重箱")
@@ -96,17 +96,28 @@ class BiznessTask {
                  ||unit.getUnitFreightKind().equals(com.navis.argo.business.atoms.FreightKindEnum.LCL))
                  &&!unit.getUnitPrimaryUe().getUeEquipment().getEqEquipType().getEqtypRfrType().equals(com.navis.argo.business.atoms.EquipRfrTypeEnum.NON_RFR)){
              api.log("箱号" + unit.getUnitId() + "是冷重箱类型")
-             boolean hasTemperature = false;
+             boolean hasTemperatureInTran = false
              try{
-                 float tempRequiredC = unit.getUnitGoods().getGdsReeferRqmnts().getRfreqTempRequiredC()
+                 def tempRequiredC = tran.getTranTempRequired()
                  if (tempRequiredC !=null ){
-                     hasTemperature = true
-                     api.log("箱号" + unit.getUnitId() + "有设置温度")
+                     hasTemperatureInTran = true
+                     api.log("箱号" + unit.getUnitId() + "在GateTransaction有设置温度")
                  }
              }catch(Exception e){
                  api.log(e.toString())
              }
-             if(!hasTemperature){
+             boolean hasTemperatureInUnit = false
+             try{
+                 def tempRequiredC = unit.getUnitGoods().getGdsReeferRqmnts().getRfreqTempRequiredC()
+                 if (tempRequiredC !=null ){
+                     hasTemperatureInUnit = true
+                     api.log("箱号" + unit.getUnitId() + "在Unit有设置温度")
+                 }
+             }catch(Exception e){
+                 api.log(e.toString())
+             }
+
+             if(!(hasTemperatureInTran||hasTemperatureInUnit)){
                  api.log("箱号" + unit.getUnitId() + "没有设置温度")
                  tran.tranFlexString03 = "X"
              }
