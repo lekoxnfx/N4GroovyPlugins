@@ -241,6 +241,9 @@ class GenerateBAPLIE_F {
 					try{
 						discharge_port_code = unit.getUnitRouting().getRtgPOD1().getPointId()
 						load_port_code = unit.getUnitRouting().getRtgPOL().getPointId()
+						if(load_port_code==null||load_port_code==""){
+							load_port_code='CNZOS'
+						}
 					}catch(Exception e){
 						api.log(e.toString())
 					}
