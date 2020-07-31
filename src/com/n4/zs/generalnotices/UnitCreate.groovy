@@ -13,8 +13,8 @@ class UnitCreate {
         String hold_id = "PTI_H"
         String hold_note = "applied by system"
         com.navis.inventory.business.units.Unit unit = (com.navis.inventory.business.units.Unit)event.getEntity()
-        com.navis.argo.business.api.ServicesManager sm = (com.navis.argo.business.api.ServicesManager) Roastery.getBean(ServicesManager.BEAN_ID)
-        com.navis.services.business.api.EventManager sem = (com.navis.services.business.api.EventManager)Roastery.getBean("eventManager");
+        com.navis.argo.business.api.ServicesManager sm = (com.navis.argo.business.api.ServicesManager) com.navis.framework.business.Roastery.getBean(com.navis.argo.business.api.ServicesManager.BEAN_ID)
+        com.navis.services.business.api.EventManager sem = (com.navis.services.business.api.EventManager)com.navis.framework.business.Roastery.getBean("eventManager");
         com.navis.services.business.rules.EventType et_unit_create = com.navis.services.business.rules.EventType.findEventType("UNIT_CREATE")
         List event_list = sem.getEventHistory(et_unit_create,unit)
         if(event_list.size()==1){
