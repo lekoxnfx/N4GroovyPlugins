@@ -199,7 +199,10 @@ class N4GatePlugin {
             api.log("卡车类型：" + truckType)
         }
         //获取车辆类型成功,开始分类型处理
-        if(truckType.equals("行政车辆")||truckType.equals("行政公司")){
+        if(truckType==null||truckType==""){
+            resHint = "获取卡车、卡车公司类型出现异常,请确保录入卡车或卡车公司类型"
+        }
+        else if(truckType.equals("行政车辆")||truckType.equals("行政公司")){
             //行政车辆,直接放行
             api.log("行政车辆,直接放行")
             isAllowed = true
@@ -620,7 +623,7 @@ class N4GatePlugin {
                                                                 )
                                                             }
                                                         }
-                                                        
+
                                                     }
 
                                                 }
@@ -638,7 +641,7 @@ class N4GatePlugin {
                                                     'truck-visit'('gos-tv-key':tvGosKey)
                                                     'truck-transaction'(
                                                             'appointment-nbr':gateAppointment.getApptNbr(),
-                                                            )
+                                                    )
                                                 }
                                             }
                                             xmlTv = gateXMLWriter.toString()
@@ -714,11 +717,11 @@ class N4GatePlugin {
                                             case UnitCategoryEnum.STORAGE:
                                                 api.log("堆存箱，事务类型为RM")
                                                 tranType = "RM"
-                                            break;
+                                                break;
                                             case UnitCategoryEnum.EXPORT:
                                                 api.log("出口箱，事务类型为RE")
                                                 tranType = "RE"
-                                            break;
+                                                break;
                                         }
                                         def gateXMLWriter = new StringWriter()
                                         def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
