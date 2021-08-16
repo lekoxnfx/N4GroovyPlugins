@@ -201,6 +201,8 @@ class N4GatePlugin {
         //获取车辆类型成功,开始分类型处理
         if(truckType==null||truckType==""){
             resHint = "获取卡车、卡车公司类型出现异常,请确保录入卡车或卡车公司类型"
+            api.log("行政车辆,直接放行")
+            isAllowed = false
         }
         else if(truckType.equals("行政车辆")||truckType.equals("行政公司")){
             //行政车辆,直接放行
