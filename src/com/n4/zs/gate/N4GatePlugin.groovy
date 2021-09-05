@@ -505,7 +505,10 @@ class N4GatePlugin {
                                             'gate-id'("DLT GATE")
                                             'stage-id'("ingate")
                                             'truck'('license-nbr':this.truck.getTruckLicenseNbr())
-                                            'truck-visit'('gos-tv-key':tvGosKey)
+                                            'truck-visit'(
+                                                    'gos-tv-key':tvGosKey,
+                                                    'bat-nbr':this.truck.getTruckBatNbr()
+                                            )
                                         }
                                     }
                                     String xmlTv = gateXMLWriter.toString()
