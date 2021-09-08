@@ -127,7 +127,8 @@ class N4GatePlugin {
                     String truckLicState = inTruckLicense[0]
                     String truckLicNoState = inTruckLicense[1..-1]
                     api.log("车号："+truckLicNoState+"   省份："+truckLicState)
-                    truck = Truck.findTruckByLicNbr(truckLicNoState)
+                    //系统里车牌号实际为truck id
+                    truck = Truck.findTruckById(truckLicNoState)
                     if(truck!=null&&truck.truckLicenseState.equals(truckLicState)){
                         //获取到卡车对象
                         api.log("获取卡车对象,Gkey:" + truck.getPrimaryKey())
@@ -506,8 +507,7 @@ class N4GatePlugin {
                                             'stage-id'("ingate")
                                             'truck'('license-nbr':this.truck.getTruckLicenseNbr())
                                             'truck-visit'(
-                                                    'gos-tv-key':tvGosKey,
-                                                    'bat-nbr':this.truck.getTruckBatNbr()
+                                                    'gos-tv-key':tvGosKey
                                             )
                                         }
                                     }

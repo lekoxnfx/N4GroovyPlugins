@@ -29,6 +29,8 @@ class Unit_Test {
 //        return "unit id:${unit.getUnitId()},unit category:${unit.getUnitCategory()}"
         GateAppointment gateAppointment = GateAppointment.findGateAppointment(18722)
 //        gateAppointment.
+        UnitFacilityVisit ufv
+
     }
 
 }

@@ -123,6 +123,18 @@ class BiznessTask {
              }
          }
      }
+    public void test(){
+        def tran = inDao.getTran();
+        def tranNbr = tran.getTranNbr();
+        def ctrNbr = tran.getTranCtrNbr();
+        def ctrNbrRq = tran.getTranCtrNbrAssigned();
+        def unitId = tran.getTranUnitId();
+        def ctrUnitGkey = tran.getTranCtrunitGkey();
+        api.log("CheckDelivery:tranNbr:" + tranNbr + ":ctrNbr:" + ctrNbr + ":ctrNbrRq:" + ctrNbrRq + ":unitId:" + unitId + ":ctrUnitGkey:" + ctrUnitGkey);
+
+        tran.setTranFlexString01(ctrNbr);
+        com.navis.framework.business.Roastery.getHibernateApi().flush();
+    }
 
 
 
