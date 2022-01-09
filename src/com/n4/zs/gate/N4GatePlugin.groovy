@@ -113,6 +113,14 @@ class N4GatePlugin {
         //解析结束,没问题继续
         api.log("解析参数结束,参数:" + inTruckLicense + "," + inTruckScaleWeight + ","
                 + inStageId + "," + inUnitIds + "," + inApptNbrs + "," + inRequestId)
+
+       //临时关闭
+//        isNext = false
+//        isAllowed = false
+//        resHint = "自动闸口临时关闭，请联系工作人员手动处理"
+//        api.log("自动闸口临时关闭,返回禁行")
+
+
         if (isNext) {
             //获取车号,并获得对应Truck对象
             api.log("获取车号")
