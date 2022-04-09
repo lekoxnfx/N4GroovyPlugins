@@ -223,47 +223,54 @@ class N4GatePlugin {
         else if(truckType.equals("散货车辆")||truckType.equals("仅散货")){
             if(inStageId.equalsIgnoreCase("ingate")){//散货车辆进门
                 api.log("散杂货卡车进门")
-
-                //检查是否有活动记录
-                List<TruckVisitDetails> truckVisitDetailsList = TruckVisitDetails.findTVActiveByTruckLicenseNbr(truck.getTruckLicenseNbr())
-                if(truckVisitDetailsList!=null&&truckVisitDetailsList.size()>0){
-                    resHint = "有活动的记录未处理"
-                    isAllowed = false
-                    api.log(resHint)
-                }
-                else {
-                    boolean isBooked = false
-                    long truckGkey = truck.getPrimaryKey()
-                    String _sql = " select * from bookingdetails b, bookingtrucks t ,N4ZS_VIEW_TRK v " +
-                            "where t.bookingnbr = b.bookingnbr and t.trucksgkey = v.truck_gkey and b.status = 'ACTIVE' and t.status = 'ACTIVE' and v.truck_status = 'OK' "+
-                            "and v.truck_gkey = '${truckGkey}'" + "and b.startdate < sysdate and (b.enddate > sysdate or b.enddate is null) "
-                    try{
-                        String DB2 = "jdbc:oracle:thin:@" + "192.168.50.32" + ":" + "1521" + ":" + "n4"
-                        String USER2 = "zsserver"
-                        String PASSWORD2 = "zsserver"
-                        String DRIVER2 = 'oracle.jdbc.driver.OracleDriver'
-                        sqlBS = Sql.newInstance(DB2, USER2, PASSWORD2, DRIVER2)
-                        sqlBS.eachRow(_sql){
-                            isBooked = true
-                        }
-                        if(isBooked==false){
-                            isAllowed = false
-                            resHint = "该卡车未预约或已过时间"
-                            api.log(resHint)
-                        }
-                        else{
-                            isAllowed = true
-                            resHint = "散货车进闸"
-                            api.log(resHint)
-                        }
-                    }catch(Exception e){
-                        e.printStackTrace()
+                //进门临时关闭
+                isNext = false
+                isAllowed = false
+                resHint = "进门通道临时关闭，请联系工作人员手动处理"
+                api.log("进门通道临时关闭,返回禁行")
+                if(isNext){
+                    //检查是否有活动记录
+                    List<TruckVisitDetails> truckVisitDetailsList = TruckVisitDetails.findTVActiveByTruckLicenseNbr(truck.getTruckLicenseNbr())
+                    if(truckVisitDetailsList!=null&&truckVisitDetailsList.size()>0){
+                        resHint = "有活动的记录未处理"
                         isAllowed = false
-                        api.log("查询散货预约数据异常:" + e.toString())
-                        resHint = "查询散货预约数据异常,请联系技术人员"
+                        api.log(resHint)
+                    }
+                    else {
+                        boolean isBooked = false
+                        long truckGkey = truck.getPrimaryKey()
+                        String _sql = " select * from bookingdetails b, bookingtrucks t ,N4ZS_VIEW_TRK v " +
+                                "where t.bookingnbr = b.bookingnbr and t.trucksgkey = v.truck_gkey and b.status = 'ACTIVE' and t.status = 'ACTIVE' and v.truck_status = 'OK' "+
+                                "and v.truck_gkey = '${truckGkey}'" + "and b.startdate < sysdate and (b.enddate > sysdate or b.enddate is null) "
+                        try{
+                            String DB2 = "jdbc:oracle:thin:@" + "192.168.50.32" + ":" + "1521" + ":" + "n4"
+                            String USER2 = "zsserver"
+                            String PASSWORD2 = "zsserver"
+                            String DRIVER2 = 'oracle.jdbc.driver.OracleDriver'
+                            sqlBS = Sql.newInstance(DB2, USER2, PASSWORD2, DRIVER2)
+                            sqlBS.eachRow(_sql){
+                                isBooked = true
+                            }
+                            if(isBooked==false){
+                                isAllowed = false
+                                resHint = "该卡车未预约或已过时间"
+                                api.log(resHint)
+                            }
+                            else{
+                                isAllowed = true
+                                resHint = "散货车进闸"
+                                api.log(resHint)
+                            }
+                        }catch(Exception e){
+                            e.printStackTrace()
+                            isAllowed = false
+                            api.log("查询散货预约数据异常:" + e.toString())
+                            resHint = "查询散货预约数据异常,请联系技术人员"
 
+                        }
                     }
                 }
+
 
 
             }
@@ -337,7 +344,8 @@ class N4GatePlugin {
                     api.log(resHint)
                 }
 
-            }else {
+            }
+            else {
                 isAllowed = false
                 resHint = "不明的stage:" + inStageId
                 api.log(resHint)
@@ -347,405 +355,183 @@ class N4GatePlugin {
         else if(truckType.equals("集装箱车辆")||truckType.equals("仅集装箱")){
             if(inStageId.equalsIgnoreCase("ingate")) {//进门
                 api.log("集装箱进门")
-                //检查是否有活动记录
-                List<TruckVisitDetails> truckVisitDetailsList = TruckVisitDetails.findTVActiveByTruckLicenseNbr(truck.getTruckLicenseNbr())
-                if(truckVisitDetailsList!=null&&truckVisitDetailsList.size()>1){
-                    resHint = "有活动的记录未处理"
-                    isAllowed = false
-                    api.log(resHint)
-                }
-                else if(truckVisitDetailsList.size()==1
-                        &&!truckVisitDetailsList[0].hasTrouble()){
-                    resHint = "有活动的记录未处理"
-                    isAllowed = false
-                    api.log(resHint)
-                }
-                else {
-                    String[] appts,cntrs
-                    List<GateAppointment> apptList = new ArrayList<GateAppointment>();
-                    List<Unit> cntrList = new ArrayList<Unit>();
-                    if((inApptNbrs==null||inApptNbrs=="")&&(inUnitIds==null||inUnitIds=="")){
-                        resHint = "没有预约号和箱号。"
+                //进门临时关闭
+                isNext = false
+                isAllowed = false
+                resHint = "进门通道临时关闭，请联系工作人员手动处理"
+                api.log("进门通道临时关闭,返回禁行")
+
+                if(isNext){
+                    //检查是否有活动记录
+                    List<TruckVisitDetails> truckVisitDetailsList = TruckVisitDetails.findTVActiveByTruckLicenseNbr(truck.getTruckLicenseNbr())
+                    if(truckVisitDetailsList!=null&&truckVisitDetailsList.size()>1){
+                        resHint = "有活动的记录未处理"
+                        isAllowed = false
                         api.log(resHint)
-                        isAllowed = false;
-                        isNext = false;
                     }
-                    if(isNext){
-                        if(inApptNbrs!=null&&inApptNbrs!=""){
-                            try{
-                                //解析预约号
-                                String[] apptStrs = inApptNbrs.contains(",")?inApptNbrs.split(",",-1):[inApptNbrs]
-                                /*
-                                修改于2017年03月13日
-                                */
-                                List<String> apptStrList = new ArrayList<>()
-                                apptStrs.each {apptStr->
-                                    if (apptStr.endsWith("A")){
-                                        apptStrList.add(apptStr[0..-2])
-                                    }
-                                    else if(apptStr.endsWith("B")){
-                                        apptStrList.add(apptStr[0..-2])
-                                        apptStrList.add(apptStr[0..-2])
-                                    }
-                                    else {
-                                        //兼容旧版预约号
-                                        apptStrList.add(apptStr[0..-2])
-                                    }
-                                }
-                                appts = apptStrList.toArray()
-
-                            }catch(Exception e){
-                                resHint = "预约号解析出错。"
-                                api.log(resHint)
-                                isAllowed = false;
-                                isNext = false;
-                            }
-                            appts.each{appt->
-                                if(appt == null || appt == ""){
-                                    resHint = "预约解析出错,存在空值"
-                                    api.log(resHint)
-                                    isAllowed = false;
-                                    isNext = false;
-                                }
-                            }
-                        }
-                        if(inUnitIds!=null&&inUnitIds!=""){
-                            try{
-                                //解析箱号
-                                cntrs = this.inUnitIds.contains(",")?inUnitIds.split(",",-1):[inUnitIds]
-                            }catch(Exception e){
-                                resHint = "箱号解析出错。"
-                                api.log(resHint)
-                                isAllowed = false;
-                                isNext = false;
-                            }
-                            //判断是否有空值
-                            cntrs.each{cntr->
-                                if(cntr == null || cntr == ""){
-                                    resHint = "箱号解析出错,存在空值"
-                                    api.log(resHint)
-                                    isAllowed = false;
-                                    isNext = false;
-                                }
-                            }
-                        }
+                    else if(truckVisitDetailsList.size()==1
+                            &&!truckVisitDetailsList[0].hasTrouble()){
+                        resHint = "有活动的记录未处理"
+                        isAllowed = false
+                        api.log(resHint)
                     }
-                    //预约号箱号均成功解析
-                    if(isNext){
-
-                        try{
-                            //检测预约号是否存在
-                            appts.each {apptNbr->
-                                if(isNext){
-                                    api.log("处理预约号：" + apptNbr)
-                                    GateAppointment appt;
-                                    try{
-                                        long apptLong = apptNbr.toLong()
-                                        appt = GateAppointment.findGateAppointment(apptLong)
-
-                                        if(appt==null||!appt.getApptState().equals(AppointmentStateEnum.CREATED)){
-                                            resHint = "预约号不存在或已过期:"+apptNbr
-                                            api.log(resHint)
-                                            isAllowed = false;
-                                            isNext = false;
+                    else {
+                        String[] appts,cntrs
+                        List<GateAppointment> apptList = new ArrayList<GateAppointment>();
+                        List<Unit> cntrList = new ArrayList<Unit>();
+                        if((inApptNbrs==null||inApptNbrs=="")&&(inUnitIds==null||inUnitIds=="")){
+                            resHint = "没有预约号和箱号。"
+                            api.log(resHint)
+                            isAllowed = false;
+                            isNext = false;
+                        }
+                        if(isNext){
+                            if(inApptNbrs!=null&&inApptNbrs!=""){
+                                try{
+                                    //解析预约号
+                                    String[] apptStrs = inApptNbrs.contains(",")?inApptNbrs.split(",",-1):[inApptNbrs]
+                                    /*
+                                    修改于2017年03月13日
+                                    */
+                                    List<String> apptStrList = new ArrayList<>()
+                                    apptStrs.each {apptStr->
+                                        if (apptStr.endsWith("A")){
+                                            apptStrList.add(apptStr[0..-2])
+                                        }
+                                        else if(apptStr.endsWith("B")){
+                                            apptStrList.add(apptStr[0..-2])
+                                            apptStrList.add(apptStr[0..-2])
                                         }
                                         else {
-                                            apptList.add(appt)
+                                            //兼容旧版预约号
+                                            apptStrList.add(apptStr[0..-2])
                                         }
-                                    }catch(Exception ee) {
-                                        resHint = "预约号不存在:" + apptNbr
+                                    }
+                                    appts = apptStrList.toArray()
+
+                                }catch(Exception e){
+                                    resHint = "预约号解析出错。"
+                                    api.log(resHint)
+                                    isAllowed = false;
+                                    isNext = false;
+                                }
+                                appts.each{appt->
+                                    if(appt == null || appt == ""){
+                                        resHint = "预约解析出错,存在空值"
                                         api.log(resHint)
                                         isAllowed = false;
                                         isNext = false;
                                     }
                                 }
-
                             }
-                            //检测箱号是否存在
-                            if(isNext){
-                                cntrs.each { cntrId->
-                                    if(isNext){
-                                        api.log("处理箱号：" + cntrId)
-                                        //检查是否预录入
-                                        boolean isInbound=false;
-                                        DomainQuery dqUnit = QueryUtils.createDomainQuery(InventoryEntity.UNIT);
-                                        dqUnit.addDqPredicate(PredicateFactory.in(InventoryField.UNIT_ID,cntrId))
-                                        dqUnit.addDqPredicate(PredicateFactory.in(InventoryField.UNIT_VISIT_STATE,UnitVisitStateEnum.ACTIVE))
-                                        dqUnit.addDqPredicate(PredicateFactory.in(InventoryField.UNIT_CATEGORY,[UnitCategoryEnum.EXPORT,UnitCategoryEnum.STORAGE]))
-                                        def res = Roastery.getHibernateApi().findEntitiesByDomainQuery(dqUnit);
-                                        res.each {
-                                            Unit u = it
-                                            if(u.getUnitActiveUfvNowActive().getUfvTransitState().equals(UfvTransitStateEnum.S20_INBOUND)){
-                                                isInbound = true;
-                                                cntrList.add(u);
-                                            }
-                                        }
+                            if(inUnitIds!=null&&inUnitIds!=""){
+                                try{
+                                    //解析箱号
+                                    cntrs = this.inUnitIds.contains(",")?inUnitIds.split(",",-1):[inUnitIds]
+                                }catch(Exception e){
+                                    resHint = "箱号解析出错。"
+                                    api.log(resHint)
+                                    isAllowed = false;
+                                    isNext = false;
+                                }
+                                //判断是否有空值
+                                cntrs.each{cntr->
+                                    if(cntr == null || cntr == ""){
+                                        resHint = "箱号解析出错,存在空值"
+                                        api.log(resHint)
+                                        isAllowed = false;
+                                        isNext = false;
+                                    }
+                                }
+                            }
+                        }
+                        //预约号箱号均成功解析
+                        if(isNext){
 
-                                        if (!isInbound){
-                                            resHint = "箱号未预录:" + cntrId
+                            try{
+                                //检测预约号是否存在
+                                appts.each {apptNbr->
+                                    if(isNext){
+                                        api.log("处理预约号：" + apptNbr)
+                                        GateAppointment appt;
+                                        try{
+                                            long apptLong = apptNbr.toLong()
+                                            appt = GateAppointment.findGateAppointment(apptLong)
+
+                                            if(appt==null||!appt.getApptState().equals(AppointmentStateEnum.CREATED)){
+                                                resHint = "预约号不存在或已过期:"+apptNbr
+                                                api.log(resHint)
+                                                isAllowed = false;
+                                                isNext = false;
+                                            }
+                                            else {
+                                                apptList.add(appt)
+                                            }
+                                        }catch(Exception ee) {
+                                            resHint = "预约号不存在:" + apptNbr
                                             api.log(resHint)
                                             isAllowed = false;
                                             isNext = false;
                                         }
                                     }
+
                                 }
-                            }
-
-                            //预约号/箱号都没有问题
-                            if(isNext){
-                                String tvGosKey = getGosTvKey();
-                                //创建truckVisit
+                                //检测箱号是否存在
                                 if(isNext){
-                                    def gateXMLWriter = new StringWriter()
-                                    def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
-                                    api.log("创建TruckVisit")
-                                    /*
-                                    <gate>
-                                        <create-truck-visit>
-                                            <gate-id>DLT GATE</gate-id>
-                                            <stage-id>ingate</stage-id>
-                                            <truck license-nbr="A3PU28"/>
-                                            <truck-visit gos-tv-key="20100901001"/>
-                                        </create-truck-visit>
-                                    </gate>
-                                     */
-                                    gateXMLBuilder.'gate'(){
-                                        'create-truck-visit'(){
-                                            'gate-id'("DLT GATE")
-                                            'stage-id'("ingate")
-                                            'truck'('license-nbr':this.truck.getTruckLicenseNbr())
-                                            'truck-visit'(
-                                                    'gos-tv-key':tvGosKey
-                                            )
-                                        }
-                                    }
-                                    String xmlTv = gateXMLWriter.toString()
-                                    api.log("xml:\n" + xmlTv)
-                                    try {
-                                        n4Operator.sendRequestWithXml(xmlTv)
-                                        api.log("返回:\n" + n4Operator.STATUS + "\n" + n4Operator.PAYLOAD + "\n" + n4Operator.RESULTS )
-                                        //解析结果
-                                        //XXXX
-                                        if(n4Operator.STATUS.equals(N4Operator.ERRORS)){
-                                            //
-                                            isAllowed = false
-                                            isNext = false
-                                            resHint = "向N4发送信息异常,请手动处理" + n4Operator.MESSAGE_COLLECTOR==null?"":n4Operator.MESSAGE_COLLECTOR.getMessages().collect {return it.getMessage()}
-                                            api.log(resHint)
+                                    cntrs.each { cntrId->
+                                        if(isNext){
+                                            api.log("处理箱号：" + cntrId)
+                                            //检查是否预录入
+                                            boolean isInbound=false;
+                                            DomainQuery dqUnit = QueryUtils.createDomainQuery(InventoryEntity.UNIT);
+                                            dqUnit.addDqPredicate(PredicateFactory.in(InventoryField.UNIT_ID,cntrId))
+                                            dqUnit.addDqPredicate(PredicateFactory.in(InventoryField.UNIT_VISIT_STATE,UnitVisitStateEnum.ACTIVE))
+                                            dqUnit.addDqPredicate(PredicateFactory.in(InventoryField.UNIT_CATEGORY,[UnitCategoryEnum.EXPORT,UnitCategoryEnum.STORAGE]))
+                                            def res = Roastery.getHibernateApi().findEntitiesByDomainQuery(dqUnit);
+                                            res.each {
+                                                Unit u = it
+                                                if(u.getUnitActiveUfvNowActive().getUfvTransitState().equals(UfvTransitStateEnum.S20_INBOUND)){
+                                                    isInbound = true;
+                                                    cntrList.add(u);
+                                                }
+                                            }
 
-                                        }else{
-                                            String gateResponse = n4Operator.RESULTS[0]
-                                            api.log(gateResponse)
-
-                                            //解析N4返回的XML
-                                            def root = new XmlParser().parse(new ByteArrayInputStream(gateResponse.getBytes("utf-8")))
-                                            String gateStatus = root.'create-truck-visit-response'[0].'truck-visit'[0]["@status"]
-                                            if(gateStatus.equals("TROUBLE")){
-                                                def gateMessage1 = root.'create-truck-visit-response'[0].'truck-visit'.'messages'.'message'["@message-text"]
-                                                isAllowed = false
+                                            if (!isInbound){
+                                                resHint = "箱号未预录:" + cntrId
+                                                api.log(resHint)
+                                                isAllowed = false;
                                                 isNext = false;
-                                                resHint = gateMessage1
-                                                api.log(resHint)
                                             }
-                                            else if (gateStatus.equals("OK")){
-                                                isAllowed = true
-                                                resHint = "集装箱车进闸"
-                                                root.'create-truck-visit-response'.'truck-visit'.each { tv ->
-                                                    this.tvGkey = tv.'@tv-key'.toLong()
-                                                }
-                                                this.tvdtls = TruckVisitDetails.findTruckVisitByGkey(this.tvGkey)
-                                                //获取返回
-                                                api.log(resHint)
-                                            }else {
-                                                isAllowed = false
-                                                isNext = false
-                                                resHint = "创建车辆访问异常,请手动处理[" + gateStatus +"]"
-                                                api.log(resHint)
-                                            }
-
                                         }
-
-
-                                    } catch (Exception e1) {
-                                        isAllowed = false
-                                        isNext = false
-                                        resHint = "向N4请求异常,请联系技术人员" + e1.toString()
-                                        api.log(resHint)
-                                        api.log(e1.toString())
                                     }
                                 }
-                                //处理预约号
+
+                                //预约号/箱号都没有问题
                                 if(isNext){
-                                    api.log("开始处理预约号：")
-                                    /*
-                                    有具体箱号的预约号
-                                    <gate>
-                                      <submit-transaction>
-                                        <gate-id>DLT GATE</gate-id>
-                                        <stage-id>ingate</stage-id>
-                                        <truck-visit gos-tv-key="20100901001"/>
-                                        <truck-transaction appointment-nbr="0001841"/>
-                                      </submit-transaction>
-                                    </gate>
-                                    无具体箱号的预约号
-                                    <gate>
-                                      <submit-transaction>
-                                        <gate-id>DLT GATE</gate-id>
-                                        <stage-id>ingate</stage-id>
-                                        <truck-visit gos-tv-key='20170327163359893' />
-                                        <truck-transaction  order-nbr="ABCE" tran-type="PUM" >
-                                                <eq-order order-nbr="ABCE" order-type="EDO" line-id="COS" freight-kind="MTY">
-                                                  <eq-order-items>
-                                                    <eq-order-item eq-length="40.0" eq-iso-group="RE" eq-height="9.501312335958005" type="4530"/>
-                                                  </eq-order-items>
-                                                </eq-order>
-                                        </truck-transaction>
-                                      </submit-transaction>
-                                    </gate>
-                                     */
-                                    apptList.eachWithIndex {it,n->
-                                        GateAppointment gateAppointment = it
-                                        api.log("处理预约：" + gateAppointment.getApptNbr() + "，类型：" + gateAppointment.getGapptTranType().getName())
-                                        String xmlTv
-                                        //EDO 提空
-                                        if(gateAppointment.getGapptTranType().equals(TruckerFriendlyTranSubTypeEnum.PUM)){
-                                            EquipmentOrderItem equipmentOrderItem = EquipmentOrderItem.hydrate(gateAppointment.getGapptOrderItem().getPrimaryKey())
-                                            def gateXMLWriter = new StringWriter()
-                                            def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
-                                            gateXMLBuilder.'gate'(){
-                                                'submit-transaction'(){
-                                                    'gate-id'("DLT GATE")
-                                                    'stage-id'("ingate")
-                                                    'truck-visit'('gos-tv-key':tvGosKey)
-                                                    'truck-transaction'(
-                                                            'order-nbr':gateAppointment.getGapptOrder().getEqboNbr(),
-                                                            'tran-type':"PUM"
-                                                    ){
-                                                        'eq-order'(
-                                                                'order-nbr':gateAppointment.getGapptOrder().getEqboNbr(),
-                                                                'order-type':'EDO',
-                                                                'freight-kind':'MTY',
-                                                                'line-id':gateAppointment.getGapptLineOperator().getBzuId()
-                                                        ){
-                                                            'eq-order-items'(){
-                                                                'eq-order-item'(
-                                                                        'eq-length':equipmentOrderItem.getEqoiEqSize().getValueInUnits(LengthUnit.FEET),
-                                                                        'eq-iso-group':equipmentOrderItem.getEqoiEqIsoGroup().getName(),
-                                                                        'eq-height':equipmentOrderItem.getEqoiEqHeight().getValueInUnits(LengthUnit.FEET),
-                                                                        'type':equipmentOrderItem.getEqoiSampleEquipType().getEqtypId()
-                                                                )
-                                                            }
-                                                        }
-
-                                                    }
-
-                                                }
-                                            }
-
-                                            xmlTv = gateXMLWriter.toString()
-                                        }
-                                        else {//指定箱号
-                                            def gateXMLWriter = new StringWriter()
-                                            def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
-                                            gateXMLBuilder.'gate'(){
-                                                'submit-transaction'(){
-                                                    'gate-id'("DLT GATE")
-                                                    'stage-id'("ingate")
-                                                    'truck-visit'('gos-tv-key':tvGosKey)
-                                                    'truck-transaction'(
-                                                            'appointment-nbr':gateAppointment.getApptNbr(),
-                                                    )
-                                                }
-                                            }
-                                            xmlTv = gateXMLWriter.toString()
-                                        }
-                                        api.log("xml:\n" + xmlTv)
-                                        try {
-                                            n4Operator.sendRequestWithXml(xmlTv)
-                                            api.log("返回:\n" + n4Operator.STATUS + "\n" + n4Operator.PAYLOAD + "\n" + n4Operator.RESULTS )
-                                            //解析结果
-                                            //XXXX
-                                            if(n4Operator.STATUS.equals(N4Operator.ERRORS)){
-                                                //
-                                                isAllowed = false
-                                                isNext = false
-                                                resHint = "向N4发送信息异常,请手动处理" + n4Operator.MESSAGE_COLLECTOR==null?"":n4Operator.MESSAGE_COLLECTOR.getMessages().collect {return it.getMessage()}
-                                                api.log(resHint)
-
-                                            }else{
-                                                String gateResponse = n4Operator.RESULTS[0]
-                                                api.log(gateResponse)
-
-                                                //解析N4返回的XML
-                                                def root = new XmlParser().parse(new ByteArrayInputStream(gateResponse.getBytes("utf-8")))
-                                                String gateStatus = root.'submit-transaction-response'[0].'truck-visit'[0]["@status"]
-                                                if(gateStatus.equals("TROUBLE")){
-                                                    def gateMessage1 = root.'submit-transaction-response'[0].'truck-transactions'.'truck-transaction'.'messages'.'message'["@message-text"]
-                                                    isAllowed = false
-                                                    isNext = false;
-                                                    resHint = gateMessage1 + ("(预约" + gateAppointment.getApptNbr() + ")")
-                                                    api.log(resHint)
-                                                }
-                                                else if (gateStatus.equals("OK")){
-                                                    Thread.sleep(3000)
-
-                                                }else {
-                                                    isAllowed = false
-                                                    isNext = false
-                                                    resHint = "创建车辆事务异常,请手动处理[" + gateStatus +"]"
-                                                    api.log(resHint)
-                                                }
-                                            }
-                                        } catch (Exception e1) {
-                                            isAllowed = false
-                                            isNext = false
-                                            resHint = "向N4请求异常,请联系技术人员" + e1.toString()
-                                            api.log(resHint)
-                                            api.log(e1.toString())
-                                        }
-
-                                    }
-
-                                }
-                                //处理箱号
-                                if(isNext){
-                                    api.log("开始处理箱号：")
-                                    /*
-                                    <gate>
-                                      <submit-transaction>
-                                        <gate-id>DLT GATE</gate-id>
-                                        <stage-id>ingate</stage-id>
-                                        <truck-visit gos-tv-key="20100901001"/>
-                                        <truck-transaction tran-type="RE">
-                                           <container eqid="TRHU2045071" />
-                                        </truck-transaction>
-                                      </submit-transaction>
-                                    </gate>
-                                     */
-                                    cntrList.each {
-                                        Unit unit = it
-                                        api.log("处理箱号：" + unit.getUnitId())
-                                        String tranType;
-                                        switch (unit.getUnitCategory()){
-                                            case UnitCategoryEnum.STORAGE:
-                                                api.log("堆存箱，事务类型为RM")
-                                                tranType = "RM"
-                                                break;
-                                            case UnitCategoryEnum.EXPORT:
-                                                api.log("出口箱，事务类型为RE")
-                                                tranType = "RE"
-                                                break;
-                                        }
+                                    String tvGosKey = getGosTvKey();
+                                    //创建truckVisit
+                                    if(isNext){
                                         def gateXMLWriter = new StringWriter()
                                         def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
+                                        api.log("创建TruckVisit")
+                                        /*
+                                        <gate>
+                                            <create-truck-visit>
+                                                <gate-id>DLT GATE</gate-id>
+                                                <stage-id>ingate</stage-id>
+                                                <truck license-nbr="A3PU28"/>
+                                                <truck-visit gos-tv-key="20100901001"/>
+                                            </create-truck-visit>
+                                        </gate>
+                                         */
                                         gateXMLBuilder.'gate'(){
-                                            'submit-transaction'(){
+                                            'create-truck-visit'(){
                                                 'gate-id'("DLT GATE")
                                                 'stage-id'("ingate")
-                                                'truck-visit'('gos-tv-key':tvGosKey)
-                                                'truck-transaction'('tran-type':tranType){
-                                                    'container'('eqid':unit.getUnitId())
-                                                }
+                                                'truck'('license-nbr':this.truck.getTruckLicenseNbr())
+                                                'truck-visit'(
+                                                        'gos-tv-key':tvGosKey
+                                                )
                                             }
                                         }
                                         String xmlTv = gateXMLWriter.toString()
@@ -768,12 +554,309 @@ class N4GatePlugin {
 
                                                 //解析N4返回的XML
                                                 def root = new XmlParser().parse(new ByteArrayInputStream(gateResponse.getBytes("utf-8")))
-                                                String gateStatus = root.'submit-transaction-response'[0].'truck-visit'[0]["@status"]
+                                                String gateStatus = root.'create-truck-visit-response'[0].'truck-visit'[0]["@status"]
                                                 if(gateStatus.equals("TROUBLE")){
-                                                    def gateMessage1 = root.'submit-transaction-response'[0].'truck-transactions'.'truck-transaction'.'messages'.'message'["@message-text"]
+                                                    def gateMessage1 = root.'create-truck-visit-response'[0].'truck-visit'.'messages'.'message'["@message-text"]
                                                     isAllowed = false
                                                     isNext = false;
-                                                    resHint = gateMessage1 + ("(箱号" + unit.getUnitId() + ")")
+                                                    resHint = gateMessage1
+                                                    api.log(resHint)
+                                                }
+                                                else if (gateStatus.equals("OK")){
+                                                    isAllowed = true
+                                                    resHint = "集装箱车进闸"
+                                                    root.'create-truck-visit-response'.'truck-visit'.each { tv ->
+                                                        this.tvGkey = tv.'@tv-key'.toLong()
+                                                    }
+                                                    this.tvdtls = TruckVisitDetails.findTruckVisitByGkey(this.tvGkey)
+                                                    //获取返回
+                                                    api.log(resHint)
+                                                }else {
+                                                    isAllowed = false
+                                                    isNext = false
+                                                    resHint = "创建车辆访问异常,请手动处理[" + gateStatus +"]"
+                                                    api.log(resHint)
+                                                }
+
+                                            }
+
+
+                                        } catch (Exception e1) {
+                                            isAllowed = false
+                                            isNext = false
+                                            resHint = "向N4请求异常,请联系技术人员" + e1.toString()
+                                            api.log(resHint)
+                                            api.log(e1.toString())
+                                        }
+                                    }
+                                    //处理预约号
+                                    if(isNext){
+                                        api.log("开始处理预约号：")
+                                        /*
+                                        有具体箱号的预约号
+                                        <gate>
+                                          <submit-transaction>
+                                            <gate-id>DLT GATE</gate-id>
+                                            <stage-id>ingate</stage-id>
+                                            <truck-visit gos-tv-key="20100901001"/>
+                                            <truck-transaction appointment-nbr="0001841"/>
+                                          </submit-transaction>
+                                        </gate>
+                                        无具体箱号的预约号
+                                        <gate>
+                                          <submit-transaction>
+                                            <gate-id>DLT GATE</gate-id>
+                                            <stage-id>ingate</stage-id>
+                                            <truck-visit gos-tv-key='20170327163359893' />
+                                            <truck-transaction  order-nbr="ABCE" tran-type="PUM" >
+                                                    <eq-order order-nbr="ABCE" order-type="EDO" line-id="COS" freight-kind="MTY">
+                                                      <eq-order-items>
+                                                        <eq-order-item eq-length="40.0" eq-iso-group="RE" eq-height="9.501312335958005" type="4530"/>
+                                                      </eq-order-items>
+                                                    </eq-order>
+                                            </truck-transaction>
+                                          </submit-transaction>
+                                        </gate>
+                                         */
+                                        apptList.eachWithIndex {it,n->
+                                            GateAppointment gateAppointment = it
+                                            api.log("处理预约：" + gateAppointment.getApptNbr() + "，类型：" + gateAppointment.getGapptTranType().getName())
+                                            String xmlTv
+                                            //EDO 提空
+                                            if(gateAppointment.getGapptTranType().equals(TruckerFriendlyTranSubTypeEnum.PUM)){
+                                                EquipmentOrderItem equipmentOrderItem = EquipmentOrderItem.hydrate(gateAppointment.getGapptOrderItem().getPrimaryKey())
+                                                def gateXMLWriter = new StringWriter()
+                                                def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
+                                                gateXMLBuilder.'gate'(){
+                                                    'submit-transaction'(){
+                                                        'gate-id'("DLT GATE")
+                                                        'stage-id'("ingate")
+                                                        'truck-visit'('gos-tv-key':tvGosKey)
+                                                        'truck-transaction'(
+                                                                'order-nbr':gateAppointment.getGapptOrder().getEqboNbr(),
+                                                                'tran-type':"PUM"
+                                                        ){
+                                                            'eq-order'(
+                                                                    'order-nbr':gateAppointment.getGapptOrder().getEqboNbr(),
+                                                                    'order-type':'EDO',
+                                                                    'freight-kind':'MTY',
+                                                                    'line-id':gateAppointment.getGapptLineOperator().getBzuId()
+                                                            ){
+                                                                'eq-order-items'(){
+                                                                    'eq-order-item'(
+                                                                            'eq-length':equipmentOrderItem.getEqoiEqSize().getValueInUnits(LengthUnit.FEET),
+                                                                            'eq-iso-group':equipmentOrderItem.getEqoiEqIsoGroup().getName(),
+                                                                            'eq-height':equipmentOrderItem.getEqoiEqHeight().getValueInUnits(LengthUnit.FEET),
+                                                                            'type':equipmentOrderItem.getEqoiSampleEquipType().getEqtypId()
+                                                                    )
+                                                                }
+                                                            }
+
+                                                        }
+
+                                                    }
+                                                }
+
+                                                xmlTv = gateXMLWriter.toString()
+                                            }
+                                            else {//指定箱号
+                                                def gateXMLWriter = new StringWriter()
+                                                def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
+                                                gateXMLBuilder.'gate'(){
+                                                    'submit-transaction'(){
+                                                        'gate-id'("DLT GATE")
+                                                        'stage-id'("ingate")
+                                                        'truck-visit'('gos-tv-key':tvGosKey)
+                                                        'truck-transaction'(
+                                                                'appointment-nbr':gateAppointment.getApptNbr(),
+                                                        )
+                                                    }
+                                                }
+                                                xmlTv = gateXMLWriter.toString()
+                                            }
+                                            api.log("xml:\n" + xmlTv)
+                                            try {
+                                                n4Operator.sendRequestWithXml(xmlTv)
+                                                api.log("返回:\n" + n4Operator.STATUS + "\n" + n4Operator.PAYLOAD + "\n" + n4Operator.RESULTS )
+                                                //解析结果
+                                                //XXXX
+                                                if(n4Operator.STATUS.equals(N4Operator.ERRORS)){
+                                                    //
+                                                    isAllowed = false
+                                                    isNext = false
+                                                    resHint = "向N4发送信息异常,请手动处理" + n4Operator.MESSAGE_COLLECTOR==null?"":n4Operator.MESSAGE_COLLECTOR.getMessages().collect {return it.getMessage()}
+                                                    api.log(resHint)
+
+                                                }else{
+                                                    String gateResponse = n4Operator.RESULTS[0]
+                                                    api.log(gateResponse)
+
+                                                    //解析N4返回的XML
+                                                    def root = new XmlParser().parse(new ByteArrayInputStream(gateResponse.getBytes("utf-8")))
+                                                    String gateStatus = root.'submit-transaction-response'[0].'truck-visit'[0]["@status"]
+                                                    if(gateStatus.equals("TROUBLE")){
+                                                        def gateMessage1 = root.'submit-transaction-response'[0].'truck-transactions'.'truck-transaction'.'messages'.'message'["@message-text"]
+                                                        isAllowed = false
+                                                        isNext = false;
+                                                        resHint = gateMessage1 + ("(预约" + gateAppointment.getApptNbr() + ")")
+                                                        api.log(resHint)
+                                                    }
+                                                    else if (gateStatus.equals("OK")){
+                                                        Thread.sleep(3000)
+
+                                                    }else {
+                                                        isAllowed = false
+                                                        isNext = false
+                                                        resHint = "创建车辆事务异常,请手动处理[" + gateStatus +"]"
+                                                        api.log(resHint)
+                                                    }
+                                                }
+                                            } catch (Exception e1) {
+                                                isAllowed = false
+                                                isNext = false
+                                                resHint = "向N4请求异常,请联系技术人员" + e1.toString()
+                                                api.log(resHint)
+                                                api.log(e1.toString())
+                                            }
+
+                                        }
+
+                                    }
+                                    //处理箱号
+                                    if(isNext){
+                                        api.log("开始处理箱号：")
+                                        /*
+                                        <gate>
+                                          <submit-transaction>
+                                            <gate-id>DLT GATE</gate-id>
+                                            <stage-id>ingate</stage-id>
+                                            <truck-visit gos-tv-key="20100901001"/>
+                                            <truck-transaction tran-type="RE">
+                                               <container eqid="TRHU2045071" />
+                                            </truck-transaction>
+                                          </submit-transaction>
+                                        </gate>
+                                         */
+                                        cntrList.each {
+                                            Unit unit = it
+                                            api.log("处理箱号：" + unit.getUnitId())
+                                            String tranType;
+                                            switch (unit.getUnitCategory()){
+                                                case UnitCategoryEnum.STORAGE:
+                                                    api.log("堆存箱，事务类型为RM")
+                                                    tranType = "RM"
+                                                    break;
+                                                case UnitCategoryEnum.EXPORT:
+                                                    api.log("出口箱，事务类型为RE")
+                                                    tranType = "RE"
+                                                    break;
+                                            }
+                                            def gateXMLWriter = new StringWriter()
+                                            def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
+                                            gateXMLBuilder.'gate'(){
+                                                'submit-transaction'(){
+                                                    'gate-id'("DLT GATE")
+                                                    'stage-id'("ingate")
+                                                    'truck-visit'('gos-tv-key':tvGosKey)
+                                                    'truck-transaction'('tran-type':tranType){
+                                                        'container'('eqid':unit.getUnitId())
+                                                    }
+                                                }
+                                            }
+                                            String xmlTv = gateXMLWriter.toString()
+                                            api.log("xml:\n" + xmlTv)
+                                            try {
+                                                n4Operator.sendRequestWithXml(xmlTv)
+                                                api.log("返回:\n" + n4Operator.STATUS + "\n" + n4Operator.PAYLOAD + "\n" + n4Operator.RESULTS )
+                                                //解析结果
+                                                //XXXX
+                                                if(n4Operator.STATUS.equals(N4Operator.ERRORS)){
+                                                    //
+                                                    isAllowed = false
+                                                    isNext = false
+                                                    resHint = "向N4发送信息异常,请手动处理" + n4Operator.MESSAGE_COLLECTOR==null?"":n4Operator.MESSAGE_COLLECTOR.getMessages().collect {return it.getMessage()}
+                                                    api.log(resHint)
+
+                                                }else{
+                                                    String gateResponse = n4Operator.RESULTS[0]
+                                                    api.log(gateResponse)
+
+                                                    //解析N4返回的XML
+                                                    def root = new XmlParser().parse(new ByteArrayInputStream(gateResponse.getBytes("utf-8")))
+                                                    String gateStatus = root.'submit-transaction-response'[0].'truck-visit'[0]["@status"]
+                                                    if(gateStatus.equals("TROUBLE")){
+                                                        def gateMessage1 = root.'submit-transaction-response'[0].'truck-transactions'.'truck-transaction'.'messages'.'message'["@message-text"]
+                                                        isAllowed = false
+                                                        isNext = false;
+                                                        resHint = gateMessage1 + ("(箱号" + unit.getUnitId() + ")")
+                                                        api.log(resHint)
+                                                    }
+                                                    else if (gateStatus.equals("OK")){
+
+                                                    }else {
+                                                        isAllowed = false
+                                                        isNext = false
+                                                        resHint = "创建车辆事务异常,请手动处理[" + gateStatus +"]"
+                                                        api.log(resHint)
+                                                    }
+                                                }
+                                            } catch (Exception e1) {
+                                                isAllowed = false
+                                                isNext = false
+                                                resHint = "向N4请求异常,请联系技术人员" + e1.toString()
+                                                api.log(resHint)
+                                                api.log(e1.toString())
+                                            }
+                                        }
+                                    }
+
+                                    //推进stage
+                                    if (isNext){
+                                        api.log("推进stage")
+                                        /*
+                                        <gate>
+                                          <stage-done>
+                                               <gate-id>DLT GATE</gate-id>
+                                               <stage-id>ingate</stage-id>
+                                               <truck-visit gos-tv-key="20100901001"/>
+                                          </stage-done>
+                                        </gate>
+                                         */
+                                        def gateXMLWriter = new StringWriter()
+                                        def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
+                                        gateXMLBuilder.'gate'(){
+                                            'stage-done'(){
+                                                'gate-id'("DLT GATE")
+                                                'stage-id'("ingate")
+                                                'truck-visit'('gos-tv-key':tvGosKey)
+                                            }
+                                        }
+                                        String xmlTv = gateXMLWriter.toString()
+                                        api.log("xml:\n" + xmlTv)
+                                        try {
+                                            n4Operator.sendRequestWithXml(xmlTv)
+                                            api.log("返回:\n" + n4Operator.STATUS + "\n" + n4Operator.PAYLOAD + "\n" + n4Operator.RESULTS )
+                                            //解析结果
+                                            //XXXX
+                                            if(n4Operator.STATUS.equals(N4Operator.ERRORS)){
+                                                //
+                                                isAllowed = false
+                                                isNext = false
+                                                resHint = "向N4发送信息异常,请手动处理" + n4Operator.MESSAGE_COLLECTOR==null?"":n4Operator.MESSAGE_COLLECTOR.getMessages().collect {return it.getMessage()}
+                                                api.log(resHint)
+
+                                            }else{
+                                                String gateResponse = n4Operator.RESULTS[0]
+                                                api.log(gateResponse)
+
+                                                //解析N4返回的XML
+                                                def root = new XmlParser().parse(new ByteArrayInputStream(gateResponse.getBytes("utf-8")))
+                                                String gateStatus = root.'stage-done-response'[0].'truck-visit'[0]["@status"]
+                                                if(gateStatus.equals("TROUBLE")){
+                                                    def gateMessage1 = root.'stage-done-response'[0].'truck-transactions'.'truck-transaction'.'messages'.'message'["@message-text"]
+                                                    isAllowed = false
+                                                    isNext = false;
+                                                    resHint = gateMessage1
                                                     api.log(resHint)
                                                 }
                                                 else if (gateStatus.equals("OK")){
@@ -795,84 +878,18 @@ class N4GatePlugin {
                                     }
                                 }
 
-                                //推进stage
-                                if (isNext){
-                                    api.log("推进stage")
-                                    /*
-                                    <gate>
-                                      <stage-done>
-                                           <gate-id>DLT GATE</gate-id>
-                                           <stage-id>ingate</stage-id>
-                                           <truck-visit gos-tv-key="20100901001"/>
-                                      </stage-done>
-                                    </gate>
-                                     */
-                                    def gateXMLWriter = new StringWriter()
-                                    def gateXMLBuilder = new MarkupBuilder(gateXMLWriter)
-                                    gateXMLBuilder.'gate'(){
-                                        'stage-done'(){
-                                            'gate-id'("DLT GATE")
-                                            'stage-id'("ingate")
-                                            'truck-visit'('gos-tv-key':tvGosKey)
-                                        }
-                                    }
-                                    String xmlTv = gateXMLWriter.toString()
-                                    api.log("xml:\n" + xmlTv)
-                                    try {
-                                        n4Operator.sendRequestWithXml(xmlTv)
-                                        api.log("返回:\n" + n4Operator.STATUS + "\n" + n4Operator.PAYLOAD + "\n" + n4Operator.RESULTS )
-                                        //解析结果
-                                        //XXXX
-                                        if(n4Operator.STATUS.equals(N4Operator.ERRORS)){
-                                            //
-                                            isAllowed = false
-                                            isNext = false
-                                            resHint = "向N4发送信息异常,请手动处理" + n4Operator.MESSAGE_COLLECTOR==null?"":n4Operator.MESSAGE_COLLECTOR.getMessages().collect {return it.getMessage()}
-                                            api.log(resHint)
 
-                                        }else{
-                                            String gateResponse = n4Operator.RESULTS[0]
-                                            api.log(gateResponse)
-
-                                            //解析N4返回的XML
-                                            def root = new XmlParser().parse(new ByteArrayInputStream(gateResponse.getBytes("utf-8")))
-                                            String gateStatus = root.'stage-done-response'[0].'truck-visit'[0]["@status"]
-                                            if(gateStatus.equals("TROUBLE")){
-                                                def gateMessage1 = root.'stage-done-response'[0].'truck-transactions'.'truck-transaction'.'messages'.'message'["@message-text"]
-                                                isAllowed = false
-                                                isNext = false;
-                                                resHint = gateMessage1
-                                                api.log(resHint)
-                                            }
-                                            else if (gateStatus.equals("OK")){
-
-                                            }else {
-                                                isAllowed = false
-                                                isNext = false
-                                                resHint = "创建车辆事务异常,请手动处理[" + gateStatus +"]"
-                                                api.log(resHint)
-                                            }
-                                        }
-                                    } catch (Exception e1) {
-                                        isAllowed = false
-                                        isNext = false
-                                        resHint = "向N4请求异常,请联系技术人员" + e1.toString()
-                                        api.log(resHint)
-                                        api.log(e1.toString())
-                                    }
-                                }
                             }
-
-
-                        }
-                        catch(Exception e){
-                            resHint = "发生异常,请手动处理" + e.toString()
-                            api.log(resHint)
-                            isAllowed = false;
-                            isNext = false;
+                            catch(Exception e){
+                                resHint = "发生异常,请手动处理" + e.toString()
+                                api.log(resHint)
+                                isAllowed = false;
+                                isNext = false;
+                            }
                         }
                     }
                 }
+
 
 
 
